@@ -2,24 +2,23 @@ const express = require("express")
 const router = express.Router();
 var studentModel = require('../src/student/studentModel');
 const Student = require("../src/student/studentModel");
-router.post("/student/create", async (req,res)=>{
- 
-const  student=new studentModel(req.body);
-try{
-    await student.save();
-    res.status(201).send({
-        "status":true,
-        "message":"student created !!!!"
-    });
+const auth = require("../middleware/auth");
+router.post('/student/create', async (req, res) => {
+    try {
+      const student = new studentModel(req.body);
+      await student.validate(); // Validate the input data
+  
+      await student.save();
+      res.status(201).send({
+        status: true,
+        message: "Student Created!!!!!!!!!!!!!!!!"
+      });
+    } catch (error) {
+      res.status(400).send(error);
+    }
+  });
 
-}
-catch(error)
-{
-res.status(400).send(error)
-}
-});
-
-router.get('/students', async(req,res)=>{
+  router.get('/students',auth, async(req,res)=>{
    
     try{
          const students = await studentModel.find({});
@@ -31,20 +30,27 @@ router.get('/students', async(req,res)=>{
     }
  });
 
- router.get('/student/:id', async (req, res) => {
-    try {
-        const _id = req.params.id;
-        const student = await studentModel.findById(_id);
-        if (!student) {
-            return res.status(404).send();
-        }
-        return res.status(200).send(student);
-    } catch (error) {
+ router.get('/students/me',auth, async(req,res)=>{
+    try{
+        const _id = req.student._id;
+        const students = await studentModel.findById({_id});
+       if(!students)
+       {
+           return res.status(404).send();
+       }  
+       return res.status(200).send(students); 
+   }
+   catch(error)
+   {
         res.status(400).send(error);
-    }
+
+   }
 });
 
-router.patch('/students/:id', async(req,res)=>{
+
+
+//update records
+router.patch('/students/:id',auth, async(req,res)=>{
    
     try{
         const _id = req.params.id;
@@ -69,9 +75,8 @@ router.patch('/students/:id', async(req,res)=>{
     }
  
  });
-
-//delete records
-router.delete('/students/:id', async(req,res)=>{
+ 
+ router.delete('/students/:id', async(req,res)=>{
    
     try{
             const _id = req.params.id;
@@ -95,22 +100,19 @@ router.delete('/students/:id', async(req,res)=>{
  
     }
  });
-
- 
-router.post("/student/login", async (req,res)=>{
+ router.post('/students/logout',auth, async(req,res)=>{
+   
     try{
-        const student = await Student.findByCredentials(req.body.name,req.body.password)
-       
-        res.send({student})
-      
+            req.student.tokens = req.student.tokens.filter((token)=>{
+                return token.token !== req.token;
+            })
+            await req.student.save()
+            res.send()
     }
     catch(error)
     {
-        res.status(401).send()
+         res.status(400).send(error);
+ 
     }
-});
-
-
-
-
- module.exports = router;
+ });
+module.exports = router;
