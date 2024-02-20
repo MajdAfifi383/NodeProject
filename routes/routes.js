@@ -1,6 +1,7 @@
 const express = require("express")
 const router = express.Router();
 var studentModel = require('../src/student/studentModel');
+const Student = require("../src/student/studentModel");
 router.post("/student/create", async (req,res)=>{
  
 const  student=new studentModel(req.body);
@@ -94,6 +95,21 @@ router.delete('/students/:id', async(req,res)=>{
  
     }
  });
+
+ 
+router.post("/student/login", async (req,res)=>{
+    try{
+        const student = await Student.findByCredentials(req.body.name,req.body.password)
+       
+        res.send({student})
+      
+    }
+    catch(error)
+    {
+        res.status(401).send()
+    }
+});
+
 
 
 
